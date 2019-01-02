@@ -35,7 +35,7 @@ public class EditActivity extends AppCompatActivity {
 
     private static int IMAGE_REQUEST_CODE =2;
     private final String IMAGE_DIR = Environment.getExternalStorageDirectory() + "/diary/";
-    private final int MaxSize = 8;
+    public final int MaxSize = 8;
     private static final String Intent_key="MESSAGE";
 
     private int[] imageIds = new int[] {
