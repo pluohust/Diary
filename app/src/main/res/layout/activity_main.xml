@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <include layout = "@layout/title"></include>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/colorPrimary">
+        <LinearLayout android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/colorPrimary">
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimary"
+                android:minLines="10"
+                android:textColor="@color/colorAccent"
+                android:gravity="left"
+                android:id="@+id/NoteWord"
+                />
+
+            <GridView
+                android:layout_width="match_parent"
+                android:layout_height="400dp"
+                android:horizontalSpacing="1pt"
+                android:verticalSpacing="1pt"
+                android:numColumns="4"
+                android:gravity="center"
+                android:scrollbars="none"
+                android:id="@+id/grid-picture"
+                />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
