@@ -1,6 +1,7 @@
 package cn.luoares.diary;
 
 import android.content.Context;
+import android.icu.util.Calendar;
 import android.os.Environment;
 
 import java.io.BufferedReader;
@@ -15,6 +16,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -81,15 +83,13 @@ public class DiaryInformation {
         }
     }
 
-    public void storeLastTime() {
+    private void storeLastTime() {
         Date nowData = new Date(System.currentTimeMillis());
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy年MM月dd日/HH:mm");
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy年MM月dd日/HH:mm\tEEEE", Locale.CHINA);
         simpleDateFormat.setTimeZone(TimeZone.getDefault());
         lastTime = simpleDateFormat.format(nowData);
     }
     public String getLastTime() {
-        if (lastTime == "")
-            storeLastTime();
         return lastTime;
     }
 
@@ -106,6 +106,7 @@ public class DiaryInformation {
 
     public DiaryInformation() {
         pictureFiles = new ArrayList<String>();
+        storeLastTime();
     }
 
     public String getDate() {

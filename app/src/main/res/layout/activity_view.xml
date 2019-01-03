@@ -26,7 +26,7 @@
 
             <GridView
                 android:layout_width="match_parent"
-                android:layout_height="2000dp"
+                android:layout_height="1000dp"
                 android:horizontalSpacing="1pt"
                 android:verticalSpacing="2pt"
                 android:numColumns="1"

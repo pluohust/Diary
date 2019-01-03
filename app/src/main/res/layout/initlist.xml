@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorPrimary">
+
+    <LinearLayout android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimary">
+
+        <TextView
+            android:id="@+id/list_dayNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="10dp"
+            android:text="01"
+            android:textColor="@color/colorAccent"
+            android:textSize="25sp" />
+
+        <TextView
+            android:id="@+id/list_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:text="1月/周二"
+            android:textColor="@color/colorAccent"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <LinearLayout android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="@color/colorPrimaryDark">
+
+        <TextView
+            android:id="@+id/list_txt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:background="@color/colorPrimaryDark"
+            android:ellipsize="end"
+            android:maxLines="5"
+            android:text="快乐\n111\n11\n111\n111\njjjj"
+            android:textColor="@color/colorAccent"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:id="@+id/list_imgLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:background="@color/colorPrimaryDark"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/list_img1"
+                android:layout_width="90dp"
+                android:layout_height="90dp"
+                android:layout_margin="10dp"
+                android:scaleType="fitXY" />
+
+            <ImageView
+                android:id="@+id/list_img2"
+                android:layout_width="90dp"
+                android:layout_height="90dp"
+                android:layout_margin="10dp"
+                android:scaleType="fitXY" />
+
+            <ImageView
+                android:id="@+id/list_img3"
+                android:layout_width="90dp"
+                android:layout_height="90dp"
+                android:layout_margin="10dp"
+                android:scaleType="fitXY" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/list_other"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:background="@color/colorPrimaryDark"
+            android:text="10:28"
+            android:textColor="@color/colorAccent"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+</LinearLayout>

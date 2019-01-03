@@ -30,15 +30,20 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -48,117 +53,55 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
-
 public class MainActivity extends AppCompatActivity {
-    private static int IMAGE_REQUEST_CODE =2;
-    private final String IMAGE_DIR = Environment.getExternalStorageDirectory() + "/diary/";
-    private final int MaxSize = 8;
-    public  static  final String Intent_key="MESSAGE_Main";
-    EditText editText;
-    GridView grid;
-    int[] imageIds = new int[] {
-            R.mipmap.image_add
-    };
-    List<Map<String, Object>> listItems;
-    private SimpleAdapter simpleAdapter;     //适配器
+    private ListView listView;
+    public static List<ListInformation> dairyList;
+    private Button cancle;
+    private Button create;
 
-    DiaryInformation todayDiary; //今日记录信息
-
-    TextView titleText;
-    Button saveAndSee;
+    public static final String Intent_key_edit = "MESSAGE_Edit";
+    public static final String Intent_key_view = "MESSAGE_View";
+    public static final String dairyDir = Environment.getExternalStorageDirectory() + "/diary/";
+    public static final String dairyFile =
+            Environment.getExternalStorageDirectory() + "/diary/diary.txt";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        getWindow().setSoftInputMode(WindowManager.LayoutParams.
-                SOFT_INPUT_ADJUST_PAN);
-
         applyWritePermission();
-        initOpts();
+        ActivityCollector.addActivity(this);
 
-        editText = (EditText) findViewById(R.id.NoteWord);
-
-        titleText = (TextView) findViewById(R.id.textDate);
-        titleText.setText(todayDiary.getLastTime());
-        saveAndSee = (Button) findViewById(R.id.store);
-        saveAndSee.setOnClickListener(new View.OnClickListener() { //将文件传输到显式activity
+        initDairy();
+        DiaryAdapter diaryAdapter = new DiaryAdapter(MainActivity.this, R.layout.initlist, dairyList);
+        listView = (ListView) findViewById(R.id.main_list);
+        listView.setAdapter(diaryAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onClick(View v) {
-                todayDiary.storeTxt(editText.getText().toString());
-                todayDiary.saveToFile();
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Intent intent = new Intent(MainActivity.this, ViewActivity.class);
-                String text = todayDiary.getTxtFile();
-                intent.putExtra(Intent_key,text);
+                intent.putExtra(MainActivity.Intent_key_view, position);
                 startActivityForResult(intent,0);
             }
         });
-
-        listItems =
-                new ArrayList<Map<String, Object>>();
-        for (int i=0; i<imageIds.length; i++) {
-            Map<String, Object> listItem = new HashMap<String, Object>();
-            listItem.put("image", imageIds[i]);
-            listItems.add(listItem);
-        }
-        grid = (GridView) findViewById(R.id.grid_picture);
-        simpleAdapter = new SimpleAdapter(this,
-                listItems, R.layout.cell,
-                new String[] { "image"}, new int[] { R.id.image1});
-        simpleAdapter.setViewBinder(new SimpleAdapter.ViewBinder() {
+        diaryAdapter.notifyDataSetChanged();
+        cancle = (Button) findViewById(R.id.main_out);
+        cancle.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean setViewValue(View view, Object data,
-                                        String textRepresentation) {
-                // TODO Auto-generated method stub
-                if(view instanceof ImageView && data instanceof Bitmap){
-                    ImageView i = (ImageView)view;
-                    i.setImageBitmap((Bitmap) data);
-                    return true;
-                }
-                return false;
+            public void onClick(View v) {
+                ActivityCollector.finishAll();
             }
         });
-        grid.setAdapter(simpleAdapter);
-
-        grid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        create = (Button) findViewById(R.id.main_create);
+        create.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                if((listItems.size() < MaxSize) && (position==0)){
-                    showDialog();
-                } else if((listItems.size() == MaxSize) && (position == 0) && todayDiary.isAdd()) {
-                    todayDiary.setAdd(false);
-                    listItems.remove(0);
-                    showDialog();
-                }
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, EditActivity.class);
+                int number = -1;
+                intent.putExtra(Intent_key_edit,number);
+                startActivityForResult(intent,0);
             }
         });
-    }
-
-    //初始化文件工作
-    public void initOpts() {
-        if(!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-            AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this)
-                    .setTitle("错误")
-                    .setMessage("无法存储文件")
-                    .setPositiveButton("确定", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            finish();
-                        }
-                    }).create();
-            alertDialog.show();
-        }
-        File file = new File(IMAGE_DIR);
-        if(!file.exists()) {
-            file.mkdir();
-        }
-
-        //获取今天日期
-        Date nowData = new Date(System.currentTimeMillis());
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        simpleDateFormat.setTimeZone(TimeZone.getDefault());
-        todayDiary = new DiaryInformation();
-        todayDiary.storeDate(simpleDateFormat.format(nowData));
     }
 
     public void applyWritePermission() {
@@ -172,88 +115,79 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    void CompressPicture(String inpath, String outpath) {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inPreferredConfig = Bitmap.Config.RGB_565;
-        Bitmap bm = BitmapFactory.decodeFile(inpath, options);
-        File file = new File(outpath);
-        if (file.exists()) {
-            file.delete();
+    private void initDairy() {
+        dairyList = new ArrayList<>();
+        applyWritePermission();
+        File file = new File(dairyDir);
+        if (!file.exists()) {
+            file.mkdir();
         }
+        File writeName = new File(dairyFile);
         try {
-            FileOutputStream out = new FileOutputStream(file);
-            bm.compress(Bitmap.CompressFormat.JPEG, 90, out);
-            out.flush();
-            out.close();
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            if(!writeName.exists())
+                writeName.createNewFile();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } finally {
+        }
+
+        readDiary();
+    }
+
+    public void readDiary() {
+        try {
+            FileReader reader = new FileReader(dairyFile);
+            BufferedReader br = new BufferedReader(reader);
+            while (true) {
+                String firstline = br.readLine();
+                if (null == firstline)
+                    break;
+                ListInformation listInformation = new ListInformation();
+                listInformation.setDayNumber(firstline);
+                Log.d("dayNumber: ", firstline);
+                listInformation.setDate(br.readLine());
+                Log.d("date: ", listInformation.getDate());
+                listInformation.setImg1(br.readLine().trim());
+                Log.d("img1: ", listInformation.getImg1());
+                listInformation.setImg2(br.readLine().trim());
+                Log.d("img2: ", listInformation.getImg2());
+                listInformation.setImg3(br.readLine().trim());
+                Log.d("img3: ", listInformation.getImg3());
+                listInformation.setOther(br.readLine());
+                Log.d("other: ", listInformation.getOther());
+                listInformation.setDayDate(br.readLine());
+                Log.d("other: ", listInformation.getDayDate());
+                listInformation.setAdd(Boolean.parseBoolean(br.readLine()));
+                Log.d("add: ", listInformation.getAdd());
+                listInformation.setLastTime(br.readLine());
+                Log.d("lastTime: ", listInformation.getLastTime());
+                int numofPictures = Integer.parseInt(br.readLine());
+                for (int i = 0; i < numofPictures; i++) {
+                    listInformation.pictureFiles.add(br.readLine());
+                    Log.d("img: ", listInformation.pictureFiles.get(i));
+                }
+                listInformation.setNextNumerofPicture(Integer.parseInt(br.readLine()));
+                Log.d("nextNumberofPicture: ", listInformation.getNextNumerofPicture());
+                listInformation.setRandomNumber(Integer.parseInt(br.readLine()));
+                Log.d("randomNumber: ", listInformation.getRandomNumber());
+                String eachline;
+                String txt = "";
+                while(!(eachline = br.readLine()).equals("**@@end---8lkhljcvbn88^^^^$$**")) {
+                    txt = txt + eachline + "\n";
+                }
+                txt = txt.trim();
+                listInformation.setTxt(txt);
+                Log.d("txt: ", listInformation.getTxt());
+                dairyList.add(listInformation);
+            }
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void showDialog() {
-        Intent intent = new Intent(
-                Intent.ACTION_PICK,
-                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        startActivityForResult(intent, IMAGE_REQUEST_CODE);
-    }
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK) {
-            if (requestCode == IMAGE_REQUEST_CODE) {
-                if (data != null) {
-                    // 得到图片的全路径
-                    Uri uri = data.getData();
-                    String[] proj = {MediaStore.Images.Media.DATA};
-                    //好像是android多媒体数据库的封装接口，具体的看Android文档
-                    Cursor cursor = managedQuery(uri, proj, null, null, null);
-                    //按我个人理解 这个是获得用户选择的图片的索引值
-                    int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-                    //将光标移至开头 ，这个很重要，不小心很容易引起越界
-                    cursor.moveToFirst();
-                    //最后根据索引值获取图片路径
-                    String path = cursor.getString(column_index);
-                    if (new File(path).exists()) {
-                        Log.d("images", "源文件存在" + path);
-                    } else {
-                        Log.d("images", "源文件不存在" + path);
-                        return;
-                    }
-                    String inPath = path;
-                    String outPath = todayDiary.getNextPictureFileName();
-                    CompressPicture(inPath, outPath);
-                    if(!(new File(outPath).exists())) {
-                        Log.d("图片不存在: ", outPath);
-                        return;
-                    }
-                    Bitmap addbmp=BitmapFactory.decodeFile(outPath);
-                    HashMap<String, Object> map = new HashMap<String, Object>();
-                    map.put("image", addbmp);
-                    listItems.add(map);
-                    simpleAdapter = new SimpleAdapter(this,
-                            listItems, R.layout.cell,
-                            new String[] { "image"}, new int[] { R.id.image1});
-                    simpleAdapter.setViewBinder(new SimpleAdapter.ViewBinder() {
-                        @Override
-                        public boolean setViewValue(View view, Object data,
-                                                    String textRepresentation) {
-                            // TODO Auto-generated method stub
-                            if(view instanceof ImageView && data instanceof Bitmap){
-                                ImageView i = (ImageView)view;
-                                i.setImageBitmap((Bitmap) data);
-                                return true;
-                            }
-                            return false;
-                        }
-                    });
-                    grid.setAdapter(simpleAdapter);
-                    simpleAdapter.notifyDataSetChanged();
-                }
-            }
-        }
+    protected void onDestroy() {
+        super.onDestroy();
+        ActivityCollector.removeActivity(this);
     }
 }

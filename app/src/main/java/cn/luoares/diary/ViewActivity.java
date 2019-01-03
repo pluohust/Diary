@@ -12,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 
 public class ViewActivity extends AppCompatActivity {
-    DiaryInformation todayDiary;
     TextView view_txt;
     GridView view_grid;
     Button view_titleButton;
@@ -27,16 +27,24 @@ public class ViewActivity extends AppCompatActivity {
     TextView view_titleTxt;
     ScrollView view_scroll;
 
-    public static final String Intent_key="MESSAGE_View";
+    private int getNumber = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_view);
+        ActivityCollector.addActivity(this);
 
         view_txt = (TextView) findViewById(R.id.view_NoteWord);
         view_grid = (GridView) findViewById(R.id.view_grid_picture);
         view_titleButton = (Button) findViewById(R.id.view_return);
+        view_titleButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(ViewActivity.this, MainActivity.class);
+                startActivityForResult(intent,0);
+            }
+        });
         view_titleTxt = (TextView) findViewById(R.id.view_textDate);
         view_scroll = (ScrollView) findViewById(R.id.view_scrollview);
         view_titleEdit = (Button) findViewById(R.id.view_edit);
@@ -44,22 +52,24 @@ public class ViewActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(ViewActivity.this, EditActivity.class);
-                String text = todayDiary.getTxtFile();
-                intent.putExtra(Intent_key,text);
+                intent.putExtra(MainActivity.Intent_key_edit, getNumber);
                 startActivityForResult(intent,0);
             }
         });
 
         Intent intent =getIntent();
-        String filePath =intent.getStringExtra(MainActivity.Intent_key);
-        todayDiary = new DiaryInformation();
-        todayDiary.readFromFile(filePath);
+        getNumber = intent.getIntExtra(MainActivity.Intent_key_view, -1);
+        if (-1 == getNumber) {
+            Toast.makeText(ViewActivity.this, "传输出现错误，显式第一个日记", Toast.LENGTH_SHORT).show();
+            getNumber = 0;
+        }
+        ListInformation listInformation = MainActivity.dairyList.get(getNumber);
 
-        view_txt.setText(todayDiary.getTxt());
-        view_titleTxt.setText(todayDiary.getLastTime());
+        view_txt.setText(listInformation.getTxt());
+        view_titleTxt.setText(listInformation.getLastTime());
         List<Map<String, Object>> listItems = new ArrayList<Map<String, Object>>();
-        for(int i = 0; i < todayDiary.pictureFiles.size(); i++) {
-            Bitmap addbmp=BitmapFactory.decodeFile(todayDiary.pictureFiles.get(i));
+        for(int i = 0; i < listInformation.pictureFiles.size(); i++) {
+            Bitmap addbmp=BitmapFactory.decodeFile(listInformation.pictureFiles.get(i));
             HashMap<String, Object> map = new HashMap<String, Object>();
             map.put("image", addbmp);
             listItems.add(map);
@@ -82,5 +92,11 @@ public class ViewActivity extends AppCompatActivity {
         });
         view_grid.setAdapter(simpleAdapter);
         view_scroll.smoothScrollTo(0,0);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        ActivityCollector.removeActivity(this);
     }
 }
