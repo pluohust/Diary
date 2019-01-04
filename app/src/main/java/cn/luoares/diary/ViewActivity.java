@@ -82,7 +82,7 @@ public class ViewActivity extends AppCompatActivity {
         }
         listInformation.pictureFiles.clear();
         listInformation.pictureFiles.addAll(listImg);
-        SimpleAdapter simpleAdapter = simpleAdapter = new SimpleAdapter(this,
+        SimpleAdapter simpleAdapter = new SimpleAdapter(this,
                 listItems, R.layout.viewcell,
                 new String[] { "image"}, new int[] { R.id.view_image1});
         simpleAdapter.setViewBinder(new SimpleAdapter.ViewBinder() {

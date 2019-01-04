@@ -1,6 +1,8 @@
 package cn.luoares.diary;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -60,9 +62,13 @@ public class EditActivity extends AppCompatActivity {
     private int[] imageIds = new int[] {
             R.mipmap.image_add
     };
-    private List<Map<String, Object>> listItems;
-    private SimpleAdapter simpleAdapter;     //适配器
+    private List<Object> listItems = new ArrayList<>();
+    private EditAdapter editAdapter;     //适配器
     private ListInformation listInformation; //记录信息
+
+    //记录添加和删除的图片
+    private List<String> listAdd;
+    private List<String> listDelete;
 
     private int getNumber;
 
@@ -73,6 +79,9 @@ public class EditActivity extends AppCompatActivity {
         ActivityCollector.addActivity(this);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.
                 SOFT_INPUT_ADJUST_PAN);
+
+        listAdd = new ArrayList<>();
+        listDelete = new ArrayList<>();
 
         edit_storeTitleBt = (Button) findViewById(R.id.edit_store);
         edit_txtTitleTV = (TextView) findViewById(R.id.edit_textDate);
@@ -87,14 +96,14 @@ public class EditActivity extends AppCompatActivity {
         if(-1 == getNumber) {
             listInformation = new ListInformation();
         } else {
-            listInformation = new ListInformation();
-            listInformation = MainActivity.dairyList.get(getNumber);
+            listInformation = (ListInformation) MainActivity.dairyList.get(getNumber).clone();
         }
 
         edit_storeTitleBt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 listInformation.setTxt(edit_notewordET.getText().toString());
+                listInformation.addjustImg();
                 if(-1 == getNumber) {
                     MainActivity.dairyList.add(0, listInformation);
                     storeDiary();
@@ -102,7 +111,14 @@ public class EditActivity extends AppCompatActivity {
                     intent.putExtra(MainActivity.Intent_key_view, 0);
                     startActivityForResult(intent,0);
                 } else {
+                    MainActivity.dairyList.set(getNumber, listInformation);
                     storeDiary();
+                    for(String eachFile : listDelete) {
+                        File imgFile = new File(eachFile);
+                        if(imgFile.exists()) {
+                            imgFile.delete();
+                        }
+                    }
                     Intent intent = new Intent(EditActivity.this, ViewActivity.class);
                     intent.putExtra(MainActivity.Intent_key_view, getNumber);
                     startActivityForResult(intent,0);
@@ -116,6 +132,12 @@ public class EditActivity extends AppCompatActivity {
                     Intent intent = new Intent(EditActivity.this, MainActivity.class);
                     startActivityForResult(intent,0);
                 } else {
+                    for(String eachFile : listAdd) {
+                        File imgFile = new File(eachFile);
+                        if(imgFile.exists()) {
+                            imgFile.delete();
+                        }
+                    }
                     Intent intent = new Intent(EditActivity.this, ViewActivity.class);
                     intent.putExtra(MainActivity.Intent_key_view, getNumber);
                     startActivityForResult(intent,0);
@@ -124,35 +146,20 @@ public class EditActivity extends AppCompatActivity {
         });
         edit_txtTitleTV.setText(listInformation.getLastTime());
         edit_notewordET.setText(listInformation.getTxt());
-        listItems = new ArrayList<Map<String, Object>>();
         if(listInformation.isAdd()) {
-            Map<String, Object> listItem = new HashMap<String, Object>();
-            listItem.put("image", R.mipmap.image_add);
-            listItems.add(listItem);
+ //           listItems.add(R.mipmap.image_add);
+            listItems.add(BitmapFactory.decodeResource(getResources(), R.mipmap.image_add));
         }
         for(int i = 0; i < listInformation.pictureFiles.size(); i++) {
-            Bitmap addbmp=BitmapFactory.decodeFile(listInformation.pictureFiles.get(i));
-            HashMap<String, Object> map = new HashMap<String, Object>();
-            map.put("image", addbmp);
-            listItems.add(map);
-        }
-        SimpleAdapter simpleAdapter = simpleAdapter = new SimpleAdapter(this,
-                listItems, R.layout.cell,
-                new String[] { "image"}, new int[] { R.id.image1});
-        simpleAdapter.setViewBinder(new SimpleAdapter.ViewBinder() {
-            @Override
-            public boolean setViewValue(View view, Object data,
-                                        String textRepresentation) {
-                // TODO Auto-generated method stub
-                if(view instanceof ImageView && data instanceof Bitmap){
-                    ImageView i = (ImageView)view;
-                    i.setImageBitmap((Bitmap) data);
-                    return true;
+            if((new File(listInformation.pictureFiles.get(i))).exists()) {
+                Bitmap bitmap=BitmapFactory.decodeFile(listInformation.pictureFiles.get(i));
+                if(null != bitmap) {
+                    listItems.add(bitmap);
                 }
-                return false;
             }
-        });
-        edit_gridGV.setAdapter(simpleAdapter);
+        }
+        editAdapter = new EditAdapter(this, R.layout.cell, listItems);
+        edit_gridGV.setAdapter(editAdapter);
         edit_gridGV.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -163,6 +170,45 @@ public class EditActivity extends AppCompatActivity {
                     listItems.remove(0);
                     showDialog();
                 }
+            }
+        });
+        edit_gridGV.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
+                if(0 != position) {
+                    AlertDialog.Builder normalDialog =
+                            new AlertDialog.Builder(EditActivity.this, R.style.ButtonDialog);
+                    normalDialog.setTitle("图片操作");
+                    normalDialog.setMessage("是否删除?");
+                    normalDialog.setPositiveButton("删除",
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    if(listInformation.isAdd()) {
+                                        String imgFile = listInformation.pictureFiles.get(position-1);
+                                        listDelete.add(imgFile);
+                                        listItems.remove(position);
+                                        listInformation.pictureFiles.remove(position-1);
+                                        editAdapter.notifyDataSetChanged();
+                                    } else {
+                                        String imgFile = listInformation.pictureFiles.get(position);
+                                        listDelete.add(imgFile);
+                                        listItems.remove(position);
+                                        listInformation.pictureFiles.remove(position);
+                                        editAdapter.notifyDataSetChanged();
+                                    }
+                                }
+                            });
+                    normalDialog.setNegativeButton("取消",
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    //...To-do
+                                }
+                            });
+                    normalDialog.create().show();
+                }
+                return true;
             }
         });
         edit_scrollSV.smoothScrollTo(0,0);
@@ -223,30 +269,14 @@ public class EditActivity extends AppCompatActivity {
                         Log.d("图片不存在: ", outPath);
                         return;
                     }
+                    listAdd.add(outPath); //记录新添的图片
                     listInformation.pictureFiles.add(outPath); //记录新插入的图片
                     listInformation.addjustImg(); //调整图片
-                    Bitmap addbmp=BitmapFactory.decodeFile(outPath);
-                    HashMap<String, Object> map = new HashMap<String, Object>();
-                    map.put("image", addbmp);
-                    listItems.add(map);
-                    simpleAdapter = new SimpleAdapter(this,
-                            listItems, R.layout.cell,
-                            new String[] { "image"}, new int[] { R.id.image1});
-                    simpleAdapter.setViewBinder(new SimpleAdapter.ViewBinder() {
-                        @Override
-                        public boolean setViewValue(View view, Object data,
-                                                    String textRepresentation) {
-                            // TODO Auto-generated method stub
-                            if(view instanceof ImageView && data instanceof Bitmap){
-                                ImageView i = (ImageView)view;
-                                i.setImageBitmap((Bitmap) data);
-                                return true;
-                            }
-                            return false;
-                        }
-                    });
-                    edit_gridGV.setAdapter(simpleAdapter);
-                    simpleAdapter.notifyDataSetChanged();
+                    Bitmap bitmap=BitmapFactory.decodeFile(outPath);
+                    if(null != bitmap) {
+                        listItems.add(bitmap);
+                        editAdapter.notifyDataSetChanged();
+                    }
                 }
             }
         }

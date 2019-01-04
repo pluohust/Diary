@@ -10,7 +10,7 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.TimeZone;
 
-public class ListInformation {
+public class ListInformation implements Cloneable {
     private String dayNumber = "";
     private String date = "";
     private String txt = "";
@@ -25,6 +25,17 @@ public class ListInformation {
     public List<String> pictureFiles = new ArrayList<String>();
     private int nextNumerofPicture = 0;
     private int randomNumber = 0;
+
+    public Object clone()
+    {
+        Object tmp = null;
+        try {
+            tmp =(ListInformation) super.clone(); //Object 中的clone()识别出你要复制的是哪一个对象。
+        } catch(CloneNotSupportedException e) {
+            System.out.println(e.toString());
+        }
+        return tmp;
+    }
 
     public String getRandomNumber() {
         return Integer.toString(randomNumber);
@@ -52,12 +63,23 @@ public class ListInformation {
     }
 
     public void addjustImg() {
-        if(pictureFiles.size() > 2)
-            img3 = pictureFiles.get(2);
-        if(pictureFiles.size() > 1)
-            img2 = pictureFiles.get(1);
-        if(pictureFiles.size() > 0)
+        if(pictureFiles.size() > 2) {
             img1 = pictureFiles.get(0);
+            img2 = pictureFiles.get(1);
+            img3 = pictureFiles.get(2);
+        } else if(pictureFiles.size() > 1) {
+            img1 = pictureFiles.get(0);
+            img2 = pictureFiles.get(1);
+            img3 = "";
+        } else if(pictureFiles.size() > 0) {
+            img1 = pictureFiles.get(0);
+            img2 = "";
+            img3 = "";
+        } else {
+            img1 = "";
+            img2 = "";
+            img3 = "";
+        }
     }
 
     public void setAdd(boolean add) {
