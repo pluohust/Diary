@@ -103,7 +103,7 @@ public class EditActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 listInformation.setTxt(edit_notewordET.getText().toString());
-                listInformation.addjustImg();
+                listInformation.adjustImg();
                 if(-1 == getNumber) {
                     MainActivity.dairyList.add(0, listInformation);
                     storeDiary();
@@ -216,6 +216,7 @@ public class EditActivity extends AppCompatActivity {
     void CompressPicture(String inpath, String outpath) {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inPreferredConfig = Bitmap.Config.RGB_565;
+        options.inSampleSize = 4;
         Bitmap bm = BitmapFactory.decodeFile(inpath, options);
         File file = new File(outpath);
         if (file.exists()) {
@@ -271,7 +272,7 @@ public class EditActivity extends AppCompatActivity {
                     }
                     listAdd.add(outPath); //记录新添的图片
                     listInformation.pictureFiles.add(outPath); //记录新插入的图片
-                    listInformation.addjustImg(); //调整图片
+                    listInformation.adjustImg(); //调整图片
                     Bitmap bitmap=BitmapFactory.decodeFile(outPath);
                     if(null != bitmap) {
                         listItems.add(bitmap);

@@ -24,6 +24,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
@@ -60,6 +61,10 @@ public class MainActivity extends AppCompatActivity {
     private Button cancle;
     private Button create;
 
+    //记录滚轮位置
+    private static int scrollPos = 0;
+    private static int scrollTop = 0;
+
     public static final String Intent_key_edit = "MESSAGE_Edit";
     public static final String Intent_key_view = "MESSAGE_View";
     public static final String dairyDir = Environment.getExternalStorageDirectory() + "/diary/";
@@ -79,9 +84,16 @@ public class MainActivity extends AppCompatActivity {
         final DiaryAdapter diaryAdapter = new DiaryAdapter(MainActivity.this, R.layout.initlist, dairyList);
         listView = (ListView) findViewById(R.id.main_list);
         listView.setAdapter(diaryAdapter);
+        listView.setFriction(ViewConfiguration.getScrollFriction() / 2);
+        listView.setSelectionFromTop(scrollPos, scrollTop);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                //记录滚轮位置
+                scrollPos = listView.getFirstVisiblePosition();
+                View tmpv=listView .getChildAt(0);
+                scrollTop=(tmpv==null)?0:tmpv.getTop();
+
                 Intent intent = new Intent(MainActivity.this, ViewActivity.class);
                 intent.putExtra(MainActivity.Intent_key_view, position);
                 startActivityForResult(intent,0);
@@ -132,6 +144,11 @@ public class MainActivity extends AppCompatActivity {
         create.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //记录滚轮位置
+                scrollPos = listView.getFirstVisiblePosition();
+                View tmpv=listView .getChildAt(0);
+                scrollTop=(tmpv==null)?0:tmpv.getTop();
+
                 Intent intent = new Intent(MainActivity.this, EditActivity.class);
                 int number = -1;
                 intent.putExtra(Intent_key_edit,number);

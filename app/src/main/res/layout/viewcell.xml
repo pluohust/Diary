@@ -9,6 +9,7 @@
         android:id="@+id/view_image1"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
+        android:layout_margin="10dp"
         android:scaleType="centerCrop"
         android:adjustViewBounds="true"
         android:verticalSpacing="5pt"

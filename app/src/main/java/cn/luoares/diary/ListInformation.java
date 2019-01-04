@@ -62,7 +62,7 @@ public class ListInformation implements Cloneable {
         return dayDate;
     }
 
-    public void addjustImg() {
+    public void adjustImg() {
         if(pictureFiles.size() > 2) {
             img1 = pictureFiles.get(0);
             img2 = pictureFiles.get(1);
