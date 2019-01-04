@@ -72,7 +72,9 @@ public class MainActivity extends AppCompatActivity {
         applyWritePermission();
         ActivityCollector.addActivity(this);
 
-        initDairy();
+        if(null == dairyList) {
+            initDairy();
+        }
         DiaryAdapter diaryAdapter = new DiaryAdapter(MainActivity.this, R.layout.initlist, dairyList);
         listView = (ListView) findViewById(R.id.main_list);
         listView.setAdapter(diaryAdapter);
@@ -116,7 +118,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initDairy() {
-        dairyList = new ArrayList<>();
         applyWritePermission();
         File file = new File(dairyDir);
         if (!file.exists()) {
@@ -130,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         } finally {
         }
-
+        dairyList = new ArrayList<>();
         readDiary();
     }
 
