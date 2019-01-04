@@ -21,6 +21,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
@@ -75,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
         if(null == dairyList) {
             initDairy();
         }
-        DiaryAdapter diaryAdapter = new DiaryAdapter(MainActivity.this, R.layout.initlist, dairyList);
+        final DiaryAdapter diaryAdapter = new DiaryAdapter(MainActivity.this, R.layout.initlist, dairyList);
         listView = (ListView) findViewById(R.id.main_list);
         listView.setAdapter(diaryAdapter);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -84,6 +85,39 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(MainActivity.this, ViewActivity.class);
                 intent.putExtra(MainActivity.Intent_key_view, position);
                 startActivityForResult(intent,0);
+            }
+        });
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
+                AlertDialog.Builder normalDialog =
+                        new AlertDialog.Builder(MainActivity.this, R.style.ButtonDialog);
+                normalDialog.setTitle("日记操作");
+                normalDialog.setMessage("是否删除?");
+                normalDialog.setPositiveButton("删除",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                ListInformation tmpListInformation = dairyList.get(position);
+                                for(int i = 0; i < tmpListInformation.pictureFiles.size(); i ++) {
+                                    File tmpImg = new File(tmpListInformation.pictureFiles.get(i));
+                                    if(tmpImg.exists()) {
+                                        tmpImg.delete();
+                                    }
+                                }
+                                dairyList.remove(position);
+                                diaryAdapter.notifyDataSetChanged();
+                            }
+                        });
+                normalDialog.setNegativeButton("取消",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                //...To-do
+                            }
+                        });
+                normalDialog.create().show();
+                return true;
             }
         });
         diaryAdapter.notifyDataSetChanged();
@@ -190,5 +224,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         ActivityCollector.removeActivity(this);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            ActivityCollector.finishAll();
+        }
+        return false;
     }
 }

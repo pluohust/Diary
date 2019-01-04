@@ -14,6 +14,7 @@ import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -68,12 +69,19 @@ public class ViewActivity extends AppCompatActivity {
         view_txt.setText(listInformation.getTxt());
         view_titleTxt.setText(listInformation.getLastTime());
         List<Map<String, Object>> listItems = new ArrayList<Map<String, Object>>();
+        List<String> listImg = new ArrayList<>();
         for(int i = 0; i < listInformation.pictureFiles.size(); i++) {
-            Bitmap addbmp=BitmapFactory.decodeFile(listInformation.pictureFiles.get(i));
-            HashMap<String, Object> map = new HashMap<String, Object>();
-            map.put("image", addbmp);
-            listItems.add(map);
+            File fileImg = new File(listInformation.pictureFiles.get(i));
+            if (fileImg.exists()) {
+                Bitmap addbmp=BitmapFactory.decodeFile(listInformation.pictureFiles.get(i));
+                HashMap<String, Object> map = new HashMap<String, Object>();
+                map.put("image", addbmp);
+                listItems.add(map);
+                listImg.add(listInformation.pictureFiles.get(i));
+            }
         }
+        listInformation.pictureFiles.clear();
+        listInformation.pictureFiles.addAll(listImg);
         SimpleAdapter simpleAdapter = simpleAdapter = new SimpleAdapter(this,
                 listItems, R.layout.viewcell,
                 new String[] { "image"}, new int[] { R.id.view_image1});
