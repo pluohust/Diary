@@ -2,6 +2,7 @@ package cn.luoares.diary;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -17,12 +18,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
@@ -39,21 +42,26 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
+import me.nereo.multi_image_selector.MultiImageSelector;
+
 import static cn.luoares.diary.MainActivity.dairyFile;
 
 public class EditActivity extends AppCompatActivity {
     Button edit_storeTitleBt;
-    TextView edit_txtTitleTV;
+    Button edit_txtTitleTV;
     Button edit_cancleTitleBt;
     ScrollView edit_scrollSV;
     EditText edit_notewordET;
     GridView edit_gridGV;
+
+    private ArrayList<String> mSelectPath;
 
     private static int IMAGE_REQUEST_CODE =2;
     private final String IMAGE_DIR = Environment.getExternalStorageDirectory() + "/diary/";
@@ -84,7 +92,7 @@ public class EditActivity extends AppCompatActivity {
         listDelete = new ArrayList<>();
 
         edit_storeTitleBt = (Button) findViewById(R.id.edit_store);
-        edit_txtTitleTV = (TextView) findViewById(R.id.edit_textDate);
+        edit_txtTitleTV = (Button) findViewById(R.id.edit_textDate);
         edit_cancleTitleBt = (Button) findViewById(R.id.edit_cancle);
         edit_scrollSV = (ScrollView) findViewById(R.id.edit_scrollview);
         edit_notewordET = (EditText) findViewById(R.id.edit_NoteWord);
@@ -105,7 +113,13 @@ public class EditActivity extends AppCompatActivity {
                 listInformation.setTxt(edit_notewordET.getText().toString());
                 listInformation.adjustImg();
                 if(-1 == getNumber) {
-                    MainActivity.dairyList.add(0, listInformation);
+                    int i = 0;
+                    for(i = 0; i < MainActivity.dairyList.size(); i++) {
+                        if(listInformation.getLastTime().compareTo(MainActivity.dairyList.get(i).getLastTime()) > 0) {
+                            break;
+                        }
+                    }
+                    MainActivity.dairyList.add(i, listInformation);
                     storeDiary();
                     Intent intent = new Intent(EditActivity.this, ViewActivity.class);
                     intent.putExtra(MainActivity.Intent_key_view, 0);
@@ -145,6 +159,30 @@ public class EditActivity extends AppCompatActivity {
             }
         });
         edit_txtTitleTV.setText(listInformation.getLastTime());
+        edit_txtTitleTV.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(-1 == getNumber) {
+                    final Calendar calendar = Calendar.getInstance();
+                    DatePickerDialog DateDialog = new DatePickerDialog(EditActivity.this, R.style.MyDatePickerDialogTheme,
+                            new DatePickerDialog.OnDateSetListener() {
+                                @Override
+                                public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                                    calendar.set(Calendar.YEAR, year);
+                                    calendar.set(Calendar.MONTH, month);
+                                    calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                                    Date date = calendar.getTime();
+                                    listInformation.setDate(date);
+                                    edit_txtTitleTV.setText(listInformation.getLastTime());
+                                }
+                            },
+                            calendar.get(Calendar.YEAR),
+                            calendar.get(Calendar.MONTH),
+                            calendar.get(Calendar.DAY_OF_MONTH));
+                    DateDialog.show();
+                }
+            }
+        });
         edit_notewordET.setText(listInformation.getTxt());
         if(listInformation.isAdd()) {
  //           listItems.add(R.mipmap.image_add);
@@ -163,19 +201,15 @@ public class EditActivity extends AppCompatActivity {
         edit_gridGV.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                if((listItems.size() < MaxSize) && (position==0)){
-                    showDialog();
-                } else if((listItems.size() == MaxSize) && (position == 0) && listInformation.isAdd()) {
-                    listInformation.setAdd(false);
-                    listItems.remove(0);
-                    showDialog();
+                if(listInformation.isAdd() && (position==0)){
+                    selectPictures(MaxSize - listItems.size() + 1);
                 }
             }
         });
         edit_gridGV.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
-                if(0 != position) {
+                if(0 != position || (0 == position && !listInformation.isAdd())) {
                     AlertDialog.Builder normalDialog =
                             new AlertDialog.Builder(EditActivity.this, R.style.ButtonDialog);
                     normalDialog.setTitle("图片操作");
@@ -191,9 +225,11 @@ public class EditActivity extends AppCompatActivity {
                                         listInformation.pictureFiles.remove(position-1);
                                         editAdapter.notifyDataSetChanged();
                                     } else {
+                                        listInformation.setAdd(true);
                                         String imgFile = listInformation.pictureFiles.get(position);
                                         listDelete.add(imgFile);
                                         listItems.remove(position);
+                                        listItems.add(0, BitmapFactory.decodeResource(getResources(), R.mipmap.image_add));
                                         listInformation.pictureFiles.remove(position);
                                         editAdapter.notifyDataSetChanged();
                                     }
@@ -235,55 +271,57 @@ public class EditActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
-    public void showDialog() {
-        Intent intent = new Intent(
-                Intent.ACTION_PICK,
-                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        startActivityForResult(intent, IMAGE_REQUEST_CODE);
+    private void AddPicture(String path) {
+        if (new File(path).exists()) {
+            Log.d("images", "源文件存在" + path);
+        } else {
+            Log.d("images", "源文件不存在" + path);
+            return;
+        }
+        String outPath = listInformation.getNextPictureName();
+        CompressPicture(path, outPath);
+        if(!(new File(outPath).exists())) {
+            Log.d("图片不存在: ", outPath);
+            return;
+        }
+        listAdd.add(outPath); //记录新添的图片
+        listInformation.pictureFiles.add(outPath); //记录新插入的图片
+        listInformation.adjustImg(); //调整图片
+        Bitmap bitmap=BitmapFactory.decodeFile(outPath);
+        if(null != bitmap) {
+            listItems.add(bitmap);
+            if(listItems.size() > MaxSize) {
+                listItems.remove(0);
+                listInformation.setAdd(false);
+            }
+            editAdapter.notifyDataSetChanged();
+        }
+    }
+    private void selectPictures(int maxNum) {
+        MultiImageSelector selector = MultiImageSelector.create(EditActivity.this);
+        selector.showCamera(true);
+        selector.count(maxNum);
+        selector.multi();
+        selector.origin(mSelectPath);
+        selector.start(EditActivity.this, IMAGE_REQUEST_CODE);
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
             if (requestCode == IMAGE_REQUEST_CODE) {
-                if (data != null) {
-                    // 得到图片的全路径
-                    Uri uri = data.getData();
-                    String[] proj = {MediaStore.Images.Media.DATA};
-                    //好像是android多媒体数据库的封装接口，具体的看Android文档
-                    Cursor cursor = managedQuery(uri, proj, null, null, null);
-                    //按我个人理解 这个是获得用户选择的图片的索引值
-                    int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-                    //将光标移至开头 ，这个很重要，不小心很容易引起越界
-                    cursor.moveToFirst();
-                    //最后根据索引值获取图片路径
-                    String path = cursor.getString(column_index);
-                    if (new File(path).exists()) {
-                        Log.d("images", "源文件存在" + path);
-                    } else {
-                        Log.d("images", "源文件不存在" + path);
-                        return;
+                if(null != data) {
+                    mSelectPath = data.getStringArrayListExtra(MultiImageSelector.EXTRA_RESULT);
+                    for(String eachPath: mSelectPath) {
+                        AddPicture(eachPath);
                     }
-                    String outPath = listInformation.getNextPictureName();
-                    CompressPicture(path, outPath);
-                    if(!(new File(outPath).exists())) {
-                        Log.d("图片不存在: ", outPath);
-                        return;
-                    }
-                    listAdd.add(outPath); //记录新添的图片
-                    listInformation.pictureFiles.add(outPath); //记录新插入的图片
-                    listInformation.adjustImg(); //调整图片
-                    Bitmap bitmap=BitmapFactory.decodeFile(outPath);
-                    if(null != bitmap) {
-                        listItems.add(bitmap);
-                        editAdapter.notifyDataSetChanged();
-                    }
+                    mSelectPath.clear();
                 }
             }
         }
     }
 
-    public void storeDiary() {
+    public static void storeDiary() {
         File writeName = new File(dairyFile);
         try {
             writeName.createNewFile();

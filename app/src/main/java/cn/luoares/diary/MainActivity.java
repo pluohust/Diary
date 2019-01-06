@@ -81,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
         if(null == dairyList) {
             initDairy();
         }
+
         final DiaryAdapter diaryAdapter = new DiaryAdapter(MainActivity.this, R.layout.initlist, dairyList);
         listView = (ListView) findViewById(R.id.main_list);
         listView.setAdapter(diaryAdapter);
@@ -118,6 +119,7 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                 }
                                 dairyList.remove(position);
+                                EditActivity.storeDiary();
                                 diaryAdapter.notifyDataSetChanged();
                             }
                         });

@@ -104,6 +104,25 @@ public class ListInformation implements Cloneable {
         return pictureFileName;
     }
 
+    public void setDate(Date inDate) {
+        Date nowData = inDate;
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy年MM月dd日/HH:mm\tEEEE", Locale.CHINA);
+        simpleDateFormat.setTimeZone(TimeZone.getDefault());
+        lastTime = simpleDateFormat.format(nowData);
+        simpleDateFormat = new SimpleDateFormat("dd", Locale.CHINA);
+        simpleDateFormat.setTimeZone(TimeZone.getDefault());
+        dayNumber = simpleDateFormat.format(nowData);
+        simpleDateFormat = new SimpleDateFormat("MM月/EE", Locale.CHINA);
+        simpleDateFormat.setTimeZone(TimeZone.getDefault());
+        date = simpleDateFormat.format(nowData);
+        simpleDateFormat = new SimpleDateFormat("HH:mm", Locale.CHINA);
+        simpleDateFormat.setTimeZone(TimeZone.getDefault());
+        other = simpleDateFormat.format(nowData);
+        simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        simpleDateFormat.setTimeZone(TimeZone.getDefault());
+        dayDate = simpleDateFormat.format(nowData);
+    }
+
     public ListInformation() {
         Date nowData = new Date(System.currentTimeMillis());
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy年MM月dd日/HH:mm\tEEEE", Locale.CHINA);

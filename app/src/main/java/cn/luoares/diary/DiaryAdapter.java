@@ -55,6 +55,8 @@ public class DiaryAdapter extends ArrayAdapter<ListInformation> {
             Bitmap bmp=BitmapFactory.decodeFile(listInformation.getImg1());
             viewHolder.img1.setImageBitmap(bmp);
             viewHolder.imgLayout.setVisibility(View.VISIBLE);
+        } else {
+            viewHolder.imgLayout.setVisibility(View.GONE);
         }
         if (new File(listInformation.getImg2()).exists()) {
             Bitmap bmp=BitmapFactory.decodeFile(listInformation.getImg2());
