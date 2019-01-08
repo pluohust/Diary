@@ -2,7 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="cn.luoares.diary">
 
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
         android:allowBackup="true"
@@ -20,6 +22,9 @@
         </activity>
         <activity android:name=".ViewActivity" />
         <activity android:name=".EditActivity"></activity>
+        <activity android:name="com.yongchun.library.view.ImageSelectorActivity"/>
+        <activity android:name="com.yongchun.library.view.ImagePreviewActivity"/>
+        <activity android:name="com.yongchun.library.view.ImageCropActivity"/>
     </application>
 
 </manifest>

@@ -34,24 +34,27 @@ import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.yongchun.library.view.ImageSelectorActivity;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import me.nereo.multi_image_selector.MultiImageSelector;
-
 import static cn.luoares.diary.MainActivity.dairyFile;
+import static com.yongchun.library.view.ImageSelectorActivity.*;
 
 public class EditActivity extends AppCompatActivity {
     Button edit_storeTitleBt;
@@ -61,10 +64,7 @@ public class EditActivity extends AppCompatActivity {
     EditText edit_notewordET;
     GridView edit_gridGV;
 
-    private ArrayList<String> mSelectPath;
-
-    private static int IMAGE_REQUEST_CODE =2;
-    private final String IMAGE_DIR = Environment.getExternalStorageDirectory() + "/diary/";
+    private static final int REQUEST_CODE_SELECT_IMG = 1;
     public final int MaxSize = 8;
 
     private int[] imageIds = new int[] {
@@ -79,6 +79,7 @@ public class EditActivity extends AppCompatActivity {
     private List<String> listDelete;
 
     private int getNumber;
+    private Boolean changeDate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,6 +101,7 @@ public class EditActivity extends AppCompatActivity {
 
         Intent intent =getIntent();
         getNumber = intent.getIntExtra(MainActivity.Intent_key_edit, -1);
+        changeDate = false;
 
         if(-1 == getNumber) {
             listInformation = new ListInformation();
@@ -122,10 +124,22 @@ public class EditActivity extends AppCompatActivity {
                     MainActivity.dairyList.add(i, listInformation);
                     storeDiary();
                     Intent intent = new Intent(EditActivity.this, ViewActivity.class);
-                    intent.putExtra(MainActivity.Intent_key_view, 0);
+                    intent.putExtra(MainActivity.Intent_key_view, i);
                     startActivityForResult(intent,0);
                 } else {
-                    MainActivity.dairyList.set(getNumber, listInformation);
+                    if(changeDate) {
+                        MainActivity.dairyList.remove(getNumber);
+                        int i = 0;
+                        for(i = 0; i < MainActivity.dairyList.size(); i++) {
+                            if(listInformation.getLastTime().compareTo(MainActivity.dairyList.get(i).getLastTime()) > 0) {
+                                break;
+                            }
+                        }
+                        MainActivity.dairyList.add(i, listInformation);
+                        getNumber = i;
+                    } else {
+                        MainActivity.dairyList.set(getNumber, listInformation);
+                    }
                     storeDiary();
                     for(String eachFile : listDelete) {
                         File imgFile = new File(eachFile);
@@ -162,25 +176,30 @@ public class EditActivity extends AppCompatActivity {
         edit_txtTitleTV.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(-1 == getNumber) {
-                    final Calendar calendar = Calendar.getInstance();
-                    DatePickerDialog DateDialog = new DatePickerDialog(EditActivity.this, R.style.MyDatePickerDialogTheme,
-                            new DatePickerDialog.OnDateSetListener() {
-                                @Override
-                                public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-                                    calendar.set(Calendar.YEAR, year);
-                                    calendar.set(Calendar.MONTH, month);
-                                    calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-                                    Date date = calendar.getTime();
-                                    listInformation.setDate(date);
-                                    edit_txtTitleTV.setText(listInformation.getLastTime());
-                                }
-                            },
-                            calendar.get(Calendar.YEAR),
-                            calendar.get(Calendar.MONTH),
-                            calendar.get(Calendar.DAY_OF_MONTH));
-                    DateDialog.show();
+                final Calendar calendar = Calendar.getInstance();
+                if(-1 != getNumber) {
+                    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy年MM月dd日/HH:mm\tEEEE", Locale.CHINA);
+                    ParsePosition pos = new ParsePosition(0);
+                    Date lastDate = simpleDateFormat.parse(listInformation.getLastTime(), pos);
+                    calendar.setTime(lastDate);
                 }
+                DatePickerDialog DateDialog = new DatePickerDialog(EditActivity.this, R.style.MyDatePickerDialogTheme,
+                        new DatePickerDialog.OnDateSetListener() {
+                            @Override
+                            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                                calendar.set(Calendar.YEAR, year);
+                                calendar.set(Calendar.MONTH, month);
+                                calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                                Date date = calendar.getTime();
+                                listInformation.setDate(date);
+                                edit_txtTitleTV.setText(listInformation.getLastTime());
+                                changeDate = true;
+                            }
+                        },
+                        calendar.get(Calendar.YEAR),
+                        calendar.get(Calendar.MONTH),
+                        calendar.get(Calendar.DAY_OF_MONTH));
+                DateDialog.show();
             }
         });
         edit_notewordET.setText(listInformation.getTxt());
@@ -251,8 +270,17 @@ public class EditActivity extends AppCompatActivity {
     }
     void CompressPicture(String inpath, String outpath) {
         BitmapFactory.Options options = new BitmapFactory.Options();
+        Bitmap bmTmp = BitmapFactory.decodeFile(inpath, options);
+        final int imgLen = 800;
+        int imgWidth = bmTmp.getWidth();
+        int imgHeight = bmTmp.getHeight();
+        int imgScale = 1;
+        if(imgWidth > imgHeight && imgWidth > imgLen)
+            imgScale = imgWidth / imgLen;
+        else if (imgWidth < imgHeight && imgHeight > imgLen)
+            imgScale = imgHeight / imgLen;
         options.inPreferredConfig = Bitmap.Config.RGB_565;
-        options.inSampleSize = 4;
+        options.inSampleSize = imgScale;
         Bitmap bm = BitmapFactory.decodeFile(inpath, options);
         File file = new File(outpath);
         if (file.exists()) {
@@ -298,25 +326,18 @@ public class EditActivity extends AppCompatActivity {
         }
     }
     private void selectPictures(int maxNum) {
-        MultiImageSelector selector = MultiImageSelector.create(EditActivity.this);
-        selector.showCamera(true);
-        selector.count(maxNum);
-        selector.multi();
-        selector.origin(mSelectPath);
-        selector.start(EditActivity.this, IMAGE_REQUEST_CODE);
+        //ImageSelector.show(EditActivity.this, REQUEST_CODE_SELECT_IMG, maxNum);
+        ImageSelectorActivity.start(EditActivity.this, maxNum,
+                ImageSelectorActivity.MODE_MULTIPLE, false,
+                true,false);
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK) {
-            if (requestCode == IMAGE_REQUEST_CODE) {
-                if(null != data) {
-                    mSelectPath = data.getStringArrayListExtra(MultiImageSelector.EXTRA_RESULT);
-                    for(String eachPath: mSelectPath) {
-                        AddPicture(eachPath);
-                    }
-                    mSelectPath.clear();
-                }
+        if(resultCode == RESULT_OK && requestCode == REQUEST_IMAGE && data != null){
+            ArrayList<String> images = (ArrayList<String>) data.getSerializableExtra(REQUEST_OUTPUT);
+            for(String eachLine : images) {
+                AddPicture(eachLine);
             }
         }
     }

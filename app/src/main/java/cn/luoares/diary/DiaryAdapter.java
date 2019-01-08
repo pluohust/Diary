@@ -61,10 +61,16 @@ public class DiaryAdapter extends ArrayAdapter<ListInformation> {
         if (new File(listInformation.getImg2()).exists()) {
             Bitmap bmp=BitmapFactory.decodeFile(listInformation.getImg2());
             viewHolder.img2.setImageBitmap(bmp);
+            viewHolder.img2.setVisibility(View.VISIBLE);
+        } else {
+            viewHolder.img2.setVisibility(View.INVISIBLE);
         }
         if (new File(listInformation.getImg3()).exists()) {
             Bitmap bmp=BitmapFactory.decodeFile(listInformation.getImg3());
             viewHolder.img3.setImageBitmap(bmp);
+            viewHolder.img3.setVisibility(View.VISIBLE);
+        } else {
+            viewHolder.img3.setVisibility(View.INVISIBLE);
         }
         viewHolder.other.setText(listInformation.getOther());
         return view;
